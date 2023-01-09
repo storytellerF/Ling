@@ -1,5 +1,5 @@
 import { AcceptResult } from "./result.js"
-import { Node, NodeState } from "./node.js"
+import { Node, NodeValueState, NodeKeyState } from "./node.js"
 class Field {
     constructor(type) {
         this.type = type
@@ -16,7 +16,10 @@ class StringField extends Field {
         super("string")
     }
     accept(char, index, preRead) {
-
+        if (char === '"') { //end
+            return new AcceptResult(null, 0, true)
+        }
+        this.value += char
     }
 }
 
@@ -74,7 +77,7 @@ class ObjField extends Field {
         if (this.state == ObjFieldState.stateBefore) {
             if (char === '"') {//开始读取到key 了
                 const node = new Node()
-                node.keyState = NodeState.stateIn
+                node.keyState = NodeKeyState.stateStarted
                 node.key = ""
                 this.objList.push(node)
                 this.state = ObjFieldState.stateIn

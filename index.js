@@ -3,17 +3,17 @@
  * "key": obj 是一个node
  * obj 与 true 是一个field
  */
-import { Node, NodeState } from "./node.js"
+import { Node, NodeValueState, NodeKeyState } from "./node.js"
 import { Field, NumberField, StringField, ObjField, BooleanField } from "./field.js";
 
-const jsonString = "{\"id\": 1610942076946493412, \"offered\": true}"
+const jsonString = "{\"id\": 1610942076946493412, \"offered\": true, \"group\": {\"name\": \"jn\", \"address\": \"hello world\"}}"
 const levelStack = []
 
 const root = new Node()
 root.key = "root"
-root.keyState = NodeState.stateOut
+root.keyState = NodeKeyState.stateDone
+root.valueState = NodeValueState.stateIn
 root.seporatorCount = 1//阻止多余的分隔符
-root.valueState = NodeState.stateIn
 levelStack.push(root)
 
 function preRead(start, end) {
@@ -41,35 +41,44 @@ for (let index = 0; index < jsonString.length; index++) {
 
 }
 console.log("root", root.value)
+console.log(levelStack.length);
 
 const pre = [root.value]
-const r = {}
-const resultStack = [r]
+const resultRoot = {}
+const resultStack = [resultRoot]
 let i = 0
 
 while (pre.length > 0) {
     i++
-    if (i > 5) break
+    if (i > 10) break
     const top = pre[pre.length - 1]
     if (top instanceof ObjField) {
-        console.log(top, top.objList.length, top.iterator)
+        console.log(top.objList.length, top.iterator, top, )
         if (top.iterator < top.objList.length) {
             const obj = top.objList[top.iterator++]
-            console.log('obj', obj);
+            console.log('obj from objField', obj);
             pre.push(obj)
         } else {
             pre.pop()
+            resultStack.pop()
         }
 
     } else if (top instanceof Node) {
         const c = resultStack[resultStack.length - 1]
-        if (top.value instanceof NumberField) {
-            c[top.key] = top.value.value
-        } else if (top.value instanceof BooleanField) {
-            c[top.key] = top.value.value
+        const topValue = top.value
+        const topKey = top.key
+        if (topValue instanceof ObjField) {
+            console.log("key :", topKey, "is obj field");
+            const o = {}
+            c[topKey] = o
+            resultStack.push(o)
+            pre.push(topValue)
+        } else {
+            c[topKey] = topValue.value
+            pre.pop()
         }
-        pre.pop()
     }
 }
 
-console.log(r)
+console.log(resultRoot)
+console.log(JSON.parse(jsonString));

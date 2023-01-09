@@ -1,6 +1,24 @@
 import { AcceptResult } from "./result.js"
 import { Field, NumberField, StringField, ObjField, BooleanField } from "./field.js"
-class NodeState {
+
+class NodeKeyState {
+    static get stateBefore() {
+        return 'before'
+    }
+    /**
+     * 遇到了第一个引号
+     */
+    static get stateStarted() {
+        return "started"
+    }
+    /**
+     * 遇到了最后一个引号
+     */
+    static get stateDone() {
+        return 'done'
+    }
+}
+class NodeValueState {
     static get stateBefore() {
         return "before"
     }
@@ -10,8 +28,11 @@ class NodeState {
     static get stateIn() {
         return "in"
     }
-    static get stateOut() {
-        return "out"
+    /**
+     * 确认了value 类型，进入accepted 状态
+     */
+    static get stateAccepted() {
+        return "accepted"
     }
 }
 
@@ -23,12 +44,12 @@ class Node {
      * 一般来说都是一个字符串
      */
     key = undefined
-    keyState = NodeState.stateBefore
+    keyState = NodeKeyState.stateBefore
     /**
      * 一般来说是一个field。
      */
     value = undefined
-    valueState = NodeState.stateBefore
+    valueState = NodeValueState.stateBefore
     //state = stateBefore
     seporatorCount = 0//node 中只能有一个分隔符“:”
     constructor() {
@@ -37,27 +58,27 @@ class Node {
 
     accept(char, index, preRead) {
         console.log("current node id =", this.id, this.keyState, this.valueState, "accept", char, "at", index);
-        if (this.keyState == NodeState.stateBefore) {//没有key
+        if (this.keyState == NodeKeyState.stateBefore) {//没有key
             if (char === '"') {
-                this.keyState = NodeState.stateIn
+                this.keyState = NodeKeyState.stateStarted
                 this.key = ""
             } else {
                 throw new Error("invalid char " + char + " at " + index)
             }
-        } else if (this.keyState == NodeState.stateIn) {//key 没有结束，接收的所有字符都作为key
+        } else if (this.keyState == NodeKeyState.stateStarted) {//key 没有结束，接收的所有字符都作为key
             if (char === '"') {
-                this.keyState = NodeState.stateOut
+                this.keyState = NodeKeyState.stateDone
             } else {
                 this.key = this.key + char
             }
-        } else if (this.valueState == NodeState.stateBefore) {
+        } else if (this.valueState == NodeValueState.stateBefore) {
             if (char === ':') {
                 if (this.seporatorCount != 0) throw new Error("多余的分隔符 at " + index)
-                else this.valueState = NodeState.stateIn
-            } else if (char === ' ') {
+                else this.valueState = NodeValueState.stateIn
+            } else if (char === ' ') {//omit
 
             } else throw new Error("invalid char " + char + " at " + index)
-        } else if (this.valueState == NodeState.stateIn) {
+        } else if (this.valueState == NodeValueState.stateIn) {//确认value 的类型，然后push 对应的field
             if (char === ',') {
                 if (this.seporatorCount != 0) throw new Error("多余的分隔符 at " + index)
                 else this.seporatorCount++
@@ -65,24 +86,24 @@ class Node {
             } else if (char === '"') {
                 const field = new StringField()
                 this.value = field
-                this.valueState = NodeState.stateOut
+                this.valueState = NodeValueState.stateAccepted
                 return new AcceptResult(field)
             } else if (char === '{') {
                 const newNode = new ObjField()
                 this.value = newNode
-                this.valueState = NodeState.stateOut
+                this.valueState = NodeValueState.stateAccepted
                 return new AcceptResult(newNode)
             } else if (char >= '0' && char <= '9') {
                 const field = new NumberField()
                 this.value = field
-                this.valueState = NodeState.stateOut
+                this.valueState = NodeValueState.stateAccepted
                 return new AcceptResult(field)
             } else if (char === 't') {
                 const a = preRead(index, index + "true".length)
                 if (a === "true") {
                     this.value = new BooleanField(true)
                 } else throw new Error("false 而不是" + a + " at " + index)
-                this.valueState = NodeState.stateOut
+                this.valueState = NodeValueState.stateAccepted
                 return new AcceptResult(null, "true".length - 1, true)
             } else if (char === 'f') {
                 const a = preRead(index, index + "false".length)
@@ -91,14 +112,13 @@ class Node {
                 } else throw new Error("false 而不是" + a + " at " + index)
                 return new AcceptResult(null, "false".length - 1, true)
             } else  throw new Error("unknown char " + char + " at " + index)
-        } else if (this.valueState == NodeState.stateOut) {
+        } else if (this.valueState == NodeValueState.stateAccepted) {//从field 的读取回到node，value 读取完成，此node 可以结束了
             return new AcceptResult(null, -1, true)
         }
-        return new AcceptResult(null)
     }
 
 }
 
 export {
-    Node, NodeState
+    Node, NodeValueState, NodeKeyState
 }
