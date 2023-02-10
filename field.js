@@ -1,5 +1,6 @@
 import { AcceptResult } from "./result.js"
 import { Node, NodeValueState, NodeKeyState } from "./node.js"
+import { isNumber } from "./utils.js"
 class Field {
     constructor(type) {
         this.type = type
@@ -7,7 +8,7 @@ class Field {
     }
 
     accept(char, index, preRead) {
-        throw new Error("无法识别的内容 " + char +" at "+ index)
+        throw new Error("无法识别的内容 " + char + " at " + index)
     }
 }
 
@@ -33,21 +34,35 @@ class StringField extends Field {
 class NumberField extends Field {
     value = 0
     valueBuilder = ""
+    /**
+     * 如果输入dot，会处理成浮点数
+     */
+    dotCount = 0
     constructor() {
         super("number")
     }
     accept(char, index, preRead) {
         if (char === '}' || char === ',' || char === ']') {//end
-            const test = Number.parseInt(this.valueBuilder)
-            if (Number.isSafeInteger(test)) {
-                this.value = test
+            if (this.dotCount > 0) {
+                this.value = Number.parseFloat(this.valueBuilder)
             } else {
-                this.value = BigInt(this.valueBuilder)
+                const test = Number.parseInt(this.valueBuilder)
+
+                if (Number.isSafeInteger(test)) {
+                    this.value = test
+                } else {
+                    this.value = BigInt(this.valueBuilder)
+                }
             }
+
             return new AcceptResult(null, -1, true)
         }
-        if (!(char >= '0' && char <= '9')) throw new Error("不可输入非数字" + char + " at " + index)
-        this.valueBuilder = this.valueBuilder + char
+        if (char === '.') {
+            if (this.dotCount == 0)
+                this.dotCount++
+            else throw new Error("已经是浮点数了 at " + index)
+        } else if (!isNumber(char)) throw new Error("不可输入非数字" + char + " at " + index)
+        this.valueBuilder += char
     }
 }
 
@@ -159,7 +174,7 @@ class ArrayField extends Field {
                 this.state = ArrayFieldState.reading
                 return new AcceptResult(null, -1)//回退一个字符。交由stateIn 处理
             }
-        } else if(this.state == ArrayFieldState.reading) {
+        } else if (this.state == ArrayFieldState.reading) {
             if (char === '"') {//数组数据是字符串
                 const field = new StringField()
                 this.check(field, char, index)
@@ -203,9 +218,9 @@ class ArrayField extends Field {
         if (this.nodeList.length == 0) return true
         const last = this.nodeList[this.nodeList.length - 1]
         if (last.constructor != newEle.constructor) {
-            throw new Error("数组中类型不一致" + char +" at " + index)
+            throw new Error("数组中类型不一致" + char + " at " + index)
         }
-         
+
     }
 }
 

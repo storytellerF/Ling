@@ -1,6 +1,6 @@
 import { AcceptResult } from "./result.js"
 import { Field, NumberField, StringField, ObjField, BooleanField, ArrayField } from "./field.js"
-
+import { isNumber } from "./utils.js"
 class NodeKeyState {
     static get stateBefore() {
         return 'before'
@@ -37,7 +37,7 @@ class NodeValueState {
 }
 
 /**
- * 一个node 代表一个 "key": obj 的组合。同时这里的obj 也是yige field。具体内容可以查看field.js
+ * 一个node 代表一个 "key": obj 的组合。同时这里的obj 也是一个 field。具体内容可以查看field.js
  * 父节点一定是ObjField。
  */
 class Node {
@@ -97,9 +97,10 @@ class Node {
                 this.value = newNode
                 this.valueState = NodeValueState.accepted
                 return new AcceptResult(newNode)
-            } else if (char >= '0' && char <= '9') {
+            } else if (isNumber(char)) {
                 const field = new NumberField()
                 this.value = field
+                field.valueBuilder = "" + char
                 this.valueState = NodeValueState.accepted
                 return new AcceptResult(field)
             } else if (char === 't') {
