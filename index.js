@@ -5,6 +5,8 @@
  */
 import { Node, NodeValueState, NodeKeyState } from "./node.js"
 import { Field, NumberField, StringField, ObjField, BooleanField, ArrayField } from "./field.js";
+import { isNumber, skip, visibleChar } from "./utils.js";
+
 
 function parse(jsonString) {
     const levelStack = []
@@ -24,7 +26,7 @@ function parse(jsonString) {
         const c = jsonString[index]
         const last = levelStack[levelStack.length - 1]
 
-        console.log("read a char at", index, "is [", c, "] last", last);
+        console.log("read a char at", index, "is [", visibleChar(c), "] last", last);
 
         const result = last.accept(c, index, preRead)
         if (result != null) {

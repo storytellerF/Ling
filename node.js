@@ -1,6 +1,6 @@
 import { AcceptResult } from "./result.js"
 import { Field, NumberField, StringField, ObjField, BooleanField, ArrayField } from "./field.js"
-import { isNumber } from "./utils.js"
+import { isNumber, skip } from "./utils.js"
 class NodeKeyState {
     static get stateBefore() {
         return 'before'
@@ -69,7 +69,9 @@ class Node {
     accept(char, index, preRead) {
         console.log("current node id =", this.id, this.keyState, this.valueState, "accept", char, "at", index);
         if (this.keyState == NodeKeyState.stateBefore) {//没有key
-            if (char === '"') {
+            if (skip(char)) {
+                //omit
+            } else if (char === '"') {
                 this.startReadKey()
             } else this.invalidChar(char, index)
         } else if (this.keyState == NodeKeyState.started) {//key 没有结束，接收的所有字符都作为key
@@ -86,7 +88,7 @@ class Node {
 
             } else this.invalidChar(char, index)
         } else if (this.valueState == NodeValueState.processing) {//确认value 的类型，然后push 对应的field
-            if (char === ' ') {//omit
+            if (skip(char)) {//omit
             } else if (char === '"') {
                 const field = new StringField()
                 this.value = field
@@ -98,9 +100,8 @@ class Node {
                 this.valueState = NodeValueState.accepted
                 return new AcceptResult(newNode)
             } else if (isNumber(char)) {
-                const field = new NumberField()
+                const field = new NumberField(char)
                 this.value = field
-                field.valueBuilder = "" + char
                 this.valueState = NodeValueState.accepted
                 return new AcceptResult(field)
             } else if (char === 't') {

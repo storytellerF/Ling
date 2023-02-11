@@ -1,6 +1,6 @@
 import { AcceptResult } from "./result.js"
 import { Node, NodeValueState, NodeKeyState } from "./node.js"
-import { isNumber } from "./utils.js"
+import { isNumber, skip, visibleChar } from "./utils.js"
 class Field {
     constructor(type) {
         this.type = type
@@ -8,7 +8,7 @@ class Field {
     }
 
     accept(char, index, preRead) {
-        throw new Error("无法识别的内容 " + char + " at " + index)
+        throw new Error("无法识别的内容 [" + visibleChar(char) + "] at " + index)
     }
 }
 
@@ -38,11 +38,12 @@ class NumberField extends Field {
      * 如果输入dot，会处理成浮点数
      */
     dotCount = 0
-    constructor() {
+    constructor(char) {
         super("number")
+        this.valueBuilder = "" + char
     }
     accept(char, index, preRead) {
-        if (char === '}' || char === ',' || char === ']') {//end
+        if (char === '}' || char === ',' || char === ']' || skip(char)) {//end
             if (this.dotCount > 0) {
                 this.value = Number.parseFloat(this.valueBuilder)
             } else {
@@ -61,7 +62,7 @@ class NumberField extends Field {
             if (this.dotCount == 0)
                 this.dotCount++
             else throw new Error("已经是浮点数了 at " + index)
-        } else if (!isNumber(char)) throw new Error("不可输入非数字" + char + " at " + index)
+        } else if (!isNumber(char)) throw new Error("不可输入非数字" + visibleChar(char) + " at " + index + preRead(index, index + 10))
         this.valueBuilder += char
     }
 }
@@ -94,6 +95,7 @@ class ObjFieldState {
 
 /**
  * 不处理最开始的{，一般父节点识别到才会进入ObjField，便将其省略
+ * 读取key 之后，全权交由{@link Node} 处理，然后等待返回
  */
 class ObjField extends Field {
     objList = []
@@ -104,7 +106,7 @@ class ObjField extends Field {
     }
     accept(char, index, preRead) {
         if (this.state == ObjFieldState.stateBefore) {
-            if (char === ' ') {//omit
+            if (skip(char)) {//omit
 
             } else if (char === ',') {
                 if (this.seporatorCount++ != 0) throw new Error("多余的分隔符, at " + index)
@@ -118,7 +120,8 @@ class ObjField extends Field {
                 super.accept(char, index)
             }
         } else if (this.state == ObjFieldState.waitReturn) {//node 处理完成
-            if (char === ",") {
+            if (skip(char)) {} 
+            else if (char === ",") {
                 this.state = ObjFieldState.stateBefore//继续读取
             } else if (char === '}') {
                 return new AcceptResult(null, 0, true)
@@ -138,13 +141,13 @@ class ArrayFieldState {
         return "before"
     }
     /**
-     * 开始读取真正的内容。根据类型进入下一阶段
+     * 开始读取真正的内容。但是还不知道类型是什么，读取到内容后，根据类型进入下一阶段
      */
     static get reading() {
         return "reading"
     }
     /**
-     * 等待处理完成后返回到这里。然后把状态重置未stateBefore
+     * 已确定类型，等待处理完成后返回到这里。然后把状态重置未stateBefore
      */
     static get waitReturn() {
         return "wait-return"
@@ -175,7 +178,9 @@ class ArrayField extends Field {
                 return new AcceptResult(null, -1)//回退一个字符。交由stateIn 处理
             }
         } else if (this.state == ArrayFieldState.reading) {
-            if (char === '"') {//数组数据是字符串
+            if (skip(char)){//omit
+
+            } else if (char === '"') {//数组数据是字符串
                 const field = new StringField()
                 this.check(field, char, index)
                 this.nodeList.push(field)
