@@ -3,20 +3,15 @@
  * "key": obj 是一个node
  * obj 与 true 是一个field
  */
-import { Node, NodeValueState, NodeKeyState } from "./node.js"
-import { Field, NumberField, StringField, ObjField, BooleanField, ArrayField } from "./field.js";
-import { isNumber, skip, visibleChar } from "./utils.js";
+import { Node } from "./node.js"
+import { Field, ObjField, ArrayField, ObjFieldState } from "./field.js";
 
-
-function parse(jsonString) {
+function parse(raw) {
+    const jsonString = "\"root\":" + raw + "}"
     const readingStack = []
+    const rootObj = new ObjField()
 
-    const root = new Node()
-    root.key = "root"
-    root.keyState = NodeKeyState.done
-    root.valueState = NodeValueState.processing
-    root.seporatorCount = 1//阻止多余的分隔符
-    readingStack.push(root)
+    readingStack.push(rootObj)
 
     function preRead(start, end) {
         return jsonString.slice(start, end)
@@ -33,20 +28,17 @@ function parse(jsonString) {
             const newNode = result.newNode
             if (newNode != null) {
                 readingStack.push(newNode)
-                //console.warn("push to", newNode)
             } else if (result.popCurrent) {
-                const t = readingStack.pop()
-                //console.warn("pop out", t)
+                readingStack.pop()
             }
             index += result.offset
         }
 
     }
-    console.debug("root", root.value)
-    console.debug(readingStack.length);
-
-    return composing(root)
-    // return {}
+    
+    console.assert(readingStack.length === 0)
+    console.assert(rootObj.state == ObjFieldState.done)
+    return composing(rootObj).root
 }
 function composing(root) {
     /**
@@ -61,26 +53,26 @@ function composing(root) {
     const treeStack = [resultRoot]
 
     while (workingStack.length > 0) {
-        console.debug("待处理长度", workingStack.length, workingStack);
+        //console.debug("待处理长度", workingStack.length, workingStack);
 
         const top = workingStack[workingStack.length - 1]
         const parentNode = treeStack[treeStack.length - 1]
 
         if (top instanceof ObjField) {
-            console.debug("obj progress", top.objList.length, top.iterator, top,)
+            //console.debug("obj progress", top.objList.length, top.iterator, top,)
             if (top.iterator < top.objList.length) {//遍历所有的对象，添加到栈中，等待处理
                 const obj = top.objList[top.iterator++]
-                console.debug('child obj from objField', obj);
+                //console.debug('child obj from objField', obj);
                 workingStack.push(obj)
             } else {//所有子元素都遍历完成
                 workingStack.pop()
                 treeStack.pop()
             }
         } else if(top instanceof ArrayField) {
-            console.debug("array progress", top.nodeList.length, top.iterator, top,)
+            //console.debug("array progress", top.nodeList.length, top.iterator, top,)
             if (top.iterator < top.nodeList.length) {
                 const obj = top.nodeList[top.iterator++]
-                console.debug("child obj from arrayField", obj)
+                //console.debug("child obj from arrayField", obj)
                 workingStack.push(obj)
                 if (obj instanceof ObjField) {
                     const newObj = {}
@@ -97,13 +89,13 @@ function composing(root) {
             const topKey = top.key
             workingStack.pop()//node “处理完毕”
             if (topValue instanceof ObjField) {
-                console.debug("obj field key :", topKey);
+                //console.debug("obj field key :", topKey);
                 const newObj = {}//此对象与objFiled 对应。objField 对应的值存入的目的地
                 parentNode[topKey] = newObj
                 treeStack.push(newObj)
                 workingStack.push(topValue)//待处理
             } else if (topValue instanceof ArrayField) {
-                console.debug("array field key:", topKey);
+                //console.debug("array field key:", topKey);
                 const newArray = []
                 parentNode[topKey] = newArray
                 treeStack.push(newArray)
@@ -112,7 +104,6 @@ function composing(root) {
                 parentNode[topKey] = topValue.value
             }
         } else if (top instanceof Field) {//非ArrayField 和ObjField 的Field，应该是数组中的Field
-
             console.assert(parentNode instanceof Array)
             parentNode.push(top.value)
             workingStack.pop()

@@ -8,6 +8,9 @@ function visibleChar(char) {
     if(char === '\n') {
         return "\\n"
     }
+    if (char === ' ') {
+        return 'backspace'
+    }
     return char
 }
 export {

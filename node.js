@@ -1,5 +1,5 @@
 import { AcceptResult } from "./result.js"
-import { Field, NumberField, StringField, ObjField, BooleanField, ArrayField } from "./field.js"
+import { NumberField, StringField, ObjField, BooleanField, ArrayField } from "./field.js"
 import { isNumber, skip } from "./utils.js"
 class NodeKeyState {
     static get stateBefore() {
@@ -67,7 +67,7 @@ class Node {
     }
 
     accept(char, index, preRead) {
-        console.debug("current node id =", this.id, this.keyState, this.valueState, "accept", char, "at", index);
+        //console.debug("current node id =", this.id, this.keyState, this.valueState, "accept", char, "at", index);
         if (this.keyState == NodeKeyState.stateBefore) {//没有key
             if (skip(char)) {
                 //omit
@@ -123,6 +123,7 @@ class Node {
                 return new AcceptResult(field)
             } else this.invalidChar(char, index)
         } else if (this.valueState == NodeValueState.accepted) {//从field 的读取回到node，value 读取完成，此node 可以结束了
+            //通知ObjField 结束
             return new AcceptResult(null, -1, true)
         }
     }

@@ -1,5 +1,5 @@
 import { AcceptResult } from "./result.js"
-import { Node, NodeValueState, NodeKeyState } from "./node.js"
+import { Node } from "./node.js"
 import { isNumber, skip, visibleChar } from "./utils.js"
 class Field {
     constructor(type) {
@@ -91,6 +91,9 @@ class ObjFieldState {
     static get waitReturn() {
         return "wait return"
     }
+    static get done() {
+        return "done"
+    }
 }
 
 /**
@@ -124,6 +127,7 @@ class ObjField extends Field {
             else if (char === ",") {
                 this.state = ObjFieldState.stateBefore//继续读取
             } else if (char === '}') {
+                this.state = ObjFieldState.done
                 return new AcceptResult(null, 0, true)
             } else super.accept(char, index, preRead)
         } else {
@@ -230,5 +234,5 @@ class ArrayField extends Field {
 }
 
 export {
-    Field, StringField, NumberField, ObjField, BooleanField, ArrayField
+    Field, StringField, NumberField, ObjField, BooleanField, ArrayField, ObjFieldState
 }
