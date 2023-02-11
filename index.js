@@ -26,7 +26,7 @@ function parse(jsonString) {
         const c = jsonString[index]
         const last = readingStack[readingStack.length - 1]
 
-        //console.log("read a char at", index, "is [", visibleChar(c), "] last", last);
+        //console.debug("read a char at", index, "is [", visibleChar(c), "] last", last);
 
         const result = last.accept(c, index, preRead)
         if (result != null) {
@@ -42,8 +42,8 @@ function parse(jsonString) {
         }
 
     }
-    console.log("root", root.value)
-    console.log(readingStack.length);
+    console.debug("root", root.value)
+    console.debug(readingStack.length);
 
     return composing(root)
     // return {}
@@ -61,26 +61,26 @@ function composing(root) {
     const treeStack = [resultRoot]
 
     while (workingStack.length > 0) {
-        console.log("待处理长度", workingStack.length, workingStack);
+        console.debug("待处理长度", workingStack.length, workingStack);
 
         const top = workingStack[workingStack.length - 1]
         const parentNode = treeStack[treeStack.length - 1]
 
         if (top instanceof ObjField) {
-            console.log("obj progress", top.objList.length, top.iterator, top,)
+            console.debug("obj progress", top.objList.length, top.iterator, top,)
             if (top.iterator < top.objList.length) {//遍历所有的对象，添加到栈中，等待处理
                 const obj = top.objList[top.iterator++]
-                console.log('child obj from objField', obj);
+                console.debug('child obj from objField', obj);
                 workingStack.push(obj)
             } else {//所有子元素都遍历完成
                 workingStack.pop()
                 treeStack.pop()
             }
         } else if(top instanceof ArrayField) {
-            console.log("array progress", top.nodeList.length, top.iterator, top,)
+            console.debug("array progress", top.nodeList.length, top.iterator, top,)
             if (top.iterator < top.nodeList.length) {
                 const obj = top.nodeList[top.iterator++]
-                console.log("child obj from arrayField", obj)
+                console.debug("child obj from arrayField", obj)
                 workingStack.push(obj)
                 if (obj instanceof ObjField) {
                     const newObj = {}
@@ -97,13 +97,13 @@ function composing(root) {
             const topKey = top.key
             workingStack.pop()//node “处理完毕”
             if (topValue instanceof ObjField) {
-                console.log("obj field key :", topKey);
+                console.debug("obj field key :", topKey);
                 const newObj = {}//此对象与objFiled 对应。objField 对应的值存入的目的地
                 parentNode[topKey] = newObj
                 treeStack.push(newObj)
                 workingStack.push(topValue)//待处理
             } else if (topValue instanceof ArrayField) {
-                console.log("array field key:", topKey);
+                console.debug("array field key:", topKey);
                 const newArray = []
                 parentNode[topKey] = newArray
                 treeStack.push(newArray)
