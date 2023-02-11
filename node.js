@@ -67,7 +67,7 @@ class Node {
     }
 
     accept(char, index, preRead) {
-        console.log("current node id =", this.id, this.keyState, this.valueState, "accept", char, "at", index);
+        //console.log("current node id =", this.id, this.keyState, this.valueState, "accept", char, "at", index);
         if (this.keyState == NodeKeyState.stateBefore) {//没有key
             if (skip(char)) {
                 //omit
