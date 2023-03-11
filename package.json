@@ -1,3 +1,17 @@
 {
-    "type":"module"
+  "type": "module",
+  "name": "ling",
+  "version": "1.0.0",
+  "description": "json serialization/deserialization",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "json",
+    "serialization",
+    "deserialization"
+  ],
+  "author": "storytellerF",
+  "license": "MIT"
 }
