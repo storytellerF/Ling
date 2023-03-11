@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "ling",
+  "name": "@storytellerf/ling",
   "version": "1.0.0",
   "description": "json serialization/deserialization",
   "main": "index.js",
@@ -12,6 +12,6 @@
     "serialization",
     "deserialization"
   ],
-  "author": "storytellerF",
+  "author": "storytellerf",
   "license": "MIT"
 }
