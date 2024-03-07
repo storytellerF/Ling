@@ -5,7 +5,7 @@
   "description": "json serialization/deserialization",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "mocha"
   },
   "keywords": [
     "json",
@@ -13,5 +13,8 @@
     "deserialization"
   ],
   "author": "storytellerf",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^10.3.0"
+  }
 }
