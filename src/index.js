@@ -129,7 +129,8 @@ const stringify = function () {
     return bigIntSerializer(key, value, other);
   });
 };
-export default {
+
+export let LING = {
   parse,
   stringify,
 };
