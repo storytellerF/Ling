@@ -6,6 +6,11 @@
 import { Node } from "./node.js";
 import { Field, ObjField, ArrayField, ObjFieldState } from "./field.js";
 
+/**
+ * Converts a JavaScript Object Notation (JSON) string into an object.
+ * @param {string} raw A valid JSON string.
+ * @returns {object} object
+ */
 function parse(raw) {
   const jsonString = '"root":' + raw + "}";
   const readingStack = [];
@@ -39,6 +44,7 @@ function parse(raw) {
   console.assert(rootObj.state == ObjFieldState.done);
   return composing(rootObj).root;
 }
+
 function composing(root) {
   /**
    * 存储的是从字符串读取出来的原始节点。
@@ -123,11 +129,20 @@ function bigIntSerializer(key, value, other) {
   return other ? other(key, value) : value;
 }
 
-const stringify = function () {
-  let other = arguments[1];
-  return JSON.stringify(arguments[0], function (key, value) {
-    return bigIntSerializer(key, value, other);
-  });
+/**
+ * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
+ * @param {string} value A JavaScript value, usually an object or array, to be converted.
+ * @param {function} replacer A function that transforms the results.
+ * @param {string|number} space Adds indentation, white space, and line break characters to the return-value JSON text to make it easier to read.
+ */
+const stringify = function (value, replacer, space) {
+  return JSON.stringify(
+    value,
+    function (key, value) {
+      return bigIntSerializer(key, value, replacer);
+    },
+    space
+  );
 };
 
 export let LING = {

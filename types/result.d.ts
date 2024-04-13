@@ -5,9 +5,8 @@ export class AcceptResult {
      * @param {number} offset 需要会退的字符数量
      * @param {number} popCurrent 是否需要把当前正在处理的节点弹出
      */
-    constructor(newNode, offset, popCurrent) {
-        this.offset = offset | 0
-        this.newNode = newNode
-        this.popCurrent = popCurrent || false
-    }
+    constructor(newNode: object, offset: number, popCurrent: number);
+    offset: number;
+    newNode: any;
+    popCurrent: number | boolean;
 }
